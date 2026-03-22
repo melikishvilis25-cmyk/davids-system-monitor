@@ -10,9 +10,14 @@ Starting from v2.0, it runs as a sleek always-on-top desktop overlay instead of 
 ### v2.0 — Desktop Overlay *(current)*
 A frameless, transparent overlay that sits in the corner of your screen and stays on top of all windows. Draggable and color-coded.
 
+<img width="385" height="221" alt="image" src="https://github.com/user-attachments/assets/776330fa-8b3b-4f84-8c11-8355c6019c05" />
+
+
 ### v1.0 — Terminal Monitor *(legacy)*
 The original console-based version with color-coded ASCII bars. Still useful for **headless servers or SSH sessions** where a display isn't available.  
 → Available under [Releases](../../releases/tag/v1.0)
+
+<img width="823" height="288" alt="preview" src="https://github.com/user-attachments/assets/794291ea-15e7-4ede-9eb8-7858b10b62be" />
 
 ---
 
