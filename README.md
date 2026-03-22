@@ -15,7 +15,7 @@ A frameless, transparent overlay that sits in the corner of your screen and stay
 
 ### v1.0 — Terminal Monitor *(legacy)*
 The original console-based version with color-coded ASCII bars. Still useful for **headless servers or SSH sessions** where a display isn't available.  
-→ Available under [Releases]([[../../releases/tag/v1.0](https://github.com/melikishvilis25-cmyk/davids-system-monitor/releases/tag/Update)
+→ Available under [Releases](https://github.com/melikishvilis25-cmyk/davids-system-monitor/releases/tag/Update)
 
 <img width="823" height="288" alt="preview" src="https://github.com/user-attachments/assets/794291ea-15e7-4ede-9eb8-7858b10b62be" />
 
