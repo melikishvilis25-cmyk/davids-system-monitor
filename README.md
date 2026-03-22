@@ -87,7 +87,6 @@ Press `Ctrl + C` to stop.
 - [ ] Network usage (upload/download speed)
 - [ ] Log system data to a file
 - [ ] Top resource-consuming processes
-- [ ] Configurable refresh rate and position
 
 ---
 
