@@ -105,7 +105,7 @@ Press `Ctrl + C` to stop.
 - The terminal version (v1.0) works best in terminals that support ANSI colors (PowerShell, Linux terminal, etc.)
 - GPU monitoring is optional and only activates if supported hardware and `gpustat` are installed
 - Transparency in the overlay requires a compositor on Linux (most modern desktop environments include one)
-
+- GPU top process tracking is not yet supported — coming in v2.1
 ---
 
 ## License
