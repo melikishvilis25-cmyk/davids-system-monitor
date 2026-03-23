@@ -8,240 +8,199 @@ try:
 except ImportError:
     GPU_AVAILABLE = False
 
-
-
 REFRESH_MS = 500
-BG         = "#0f0f0f"
-FG         = "#ffffff"
-GREEN      = "#00ff88"
-YELLOW     = "#ffd700"
-RED        = "#ff4444"
-DIM        = "#444444"
-FONT       = ("Consolas", 10)
-FONT_BOLD  = ("Consolas", 10, "bold")
 
+BG = "#0f0f0f"
+FG = "#ffffff"
+DIM = "#444444"
+GREEN = "#00ff88"
+YELLOW = "#ffd700"
+RED = "#ff4444"
 
-
-def get_disk_path():
-    return "C:\\" if os.name == "nt" else "/"
-
-
-def get_system_stats():
-    stats = {
-        "cpu":  psutil.cpu_percent(interval=None),
-        "ram":  psutil.virtual_memory().percent,
-        "disk": psutil.disk_usage(get_disk_path()).percent,
-        "gpus": []
-    }
-    if GPU_AVAILABLE:
-        try:
-            for gpu in gpustat.new_query():
-                stats["gpus"].append({
-                    "index": gpu.index,
-                    "temp":  gpu.temperature,
-                    "usage": gpu.utilization or 0
-                })
-        except Exception as e:
-            print("GPU error:", e)
-    return stats
-
-
-def get_top_processes():
-    procs = []
-    total_ram = psutil.virtual_memory().total
-    core_count = psutil.cpu_count()
-
-    for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info', 'username']):
-        try:
-            info = p.info
-
-            # skip system/kernel processes
-            if not info['username']:
-                continue
-            if info['username'] in ("SYSTEM", "NT AUTHORITY\\SYSTEM", "root"):
-                continue
-
-            info['cpu_percent']    = info['cpu_percent'] / core_count
-            info['memory_percent'] = (info['memory_info'].rss / total_ram) * 100
-            procs.append(info)
-
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-
-    top_cpu = max(procs, key=lambda p: p['cpu_percent'],    default=None)
-    top_ram = max(procs, key=lambda p: p['memory_percent'], default=None)
-
-    return {
-        "cpu": top_cpu,
-        "ram": top_ram,
-    }
+FONT = ("Consolas", 10)
+FONT_BOLD = ("Consolas", 10, "bold")
 
 
 def bar_color(percent):
-    if percent <= 50:
-        return GREEN
-    elif percent <= 80:
-        return YELLOW
+    if percent <= 50: return GREEN
+    if percent <= 80: return YELLOW
     return RED
 
 
-class SystemOverlay:
-    BAR_W = 160
-    BAR_H = 12
 
-    def __init__(self, root):
-        self.root = root
-        root.title("System Monitor")
-        root.configure(bg=BG)
-        root.overrideredirect(True)
-        root.attributes("-topmost", True)
+class SystemStats:
+    @staticmethod
+    def disk_path():
+        return "C:\\" if os.name == "nt" else "/"
 
+    @staticmethod
+    def get():
+        stats = {
+            "cpu": psutil.cpu_percent(interval=None),
+            "ram": psutil.virtual_memory().percent,
+            "disk": psutil.disk_usage(SystemStats.disk_path()).percent,
+            "gpus": []
+        }
+        if GPU_AVAILABLE:
+            try:
+                for gpu in gpustat.new_query():
+                    stats["gpus"].append({
+                        "index": gpu.index,
+                        "usage": gpu.utilization or 0,
+                        "temp": gpu.temperature
+                    })
+            except Exception as e:
+                print(f"[GPU ERROR] {e}")
+        return stats
+
+    @staticmethod
+    def top_processes():
+        procs = []
+        total_ram = psutil.virtual_memory().total
+        core_count = psutil.cpu_count()
+        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info', 'username']):
+            try:
+                info = p.info
+                username = info['username']
+                if not username:
+                    continue
+                uname = username.lower()
+                if uname in ("system", "nt authority\\system", "root"):
+                    continue
+                info['cpu_percent'] = info['cpu_percent'] / core_count
+                info['memory_percent'] = (info['memory_info'].rss / total_ram) * 100
+                procs.append(info)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return {
+            "cpu": max(procs, key=lambda p: p['cpu_percent'], default=None),
+            "ram": max(procs, key=lambda p: p['memory_percent'], default=None)
+        }
+
+
+
+class BarRow(tk.Frame):
+    def __init__(self, master, label_text):
+        super().__init__(master, bg=BG)
+        self.label = tk.Label(self, text=f"{label_text:<5}", bg=BG, fg=FG, font=FONT, width=5)
+        self.label.pack(side="left")
+        self.canvas = tk.Canvas(self, width=160, height=12, bg=BG, highlightthickness=0)
+        self.canvas.pack(side="left", padx=(4, 6))
+        self.percent_label = tk.Label(self, text="  0.0%", bg=BG, fg=FG, font=FONT, width=6)
+        self.percent_label.pack(side="left")
+
+    def update(self, percent):
+        self.canvas.delete("all")
+        filled = int(160 * percent / 100)
+        self.canvas.create_rectangle(0, 0, 160, 12, fill=DIM, outline="")
+        if filled > 0:
+            self.canvas.create_rectangle(0, 0, filled, 12, fill=bar_color(percent), outline="")
+        self.percent_label.config(text=f"{percent:5.1f}%", fg=bar_color(percent))
+
+
+class TopProcessRow(tk.Frame):
+    def __init__(self, master, label_text):
+        super().__init__(master, bg=BG)
+        tk.Label(self, text=f"{label_text:<4}", bg=BG, fg=DIM, font=FONT).pack(side="left")
+        self.label = tk.Label(self, text="—", bg=BG, fg=FG, font=FONT)
+        self.label.pack(side="left", padx=(4, 0))
+
+    def update(self, text, percent=None):
+        self.label.config(text=text)
+        if percent is not None:
+            self.label.config(fg=bar_color(percent))
+
+
+class SystemOverlay(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self._drag_offset = (0, 0)  
+        self.title("System Monitor")
+        self.configure(bg=BG)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
         try:
-            root.attributes("-alpha", 0.85)
-        except Exception as e:
-            print("Transparency error:", e)
+            self.attributes("-alpha", 0.85)
+        except Exception:
+            pass
 
-        sw = root.winfo_screenwidth()
-        root.geometry(f"+{sw - 280}+10")
-
-        root.bind("<Escape>", lambda e: root.destroy())
-
-        self._build_ui()
+        sw = self.winfo_screenwidth()
+        self.geometry(f"+{sw - 280}+10")
+        self.bind("<Escape>", lambda e: self.destroy())
         self._make_draggable()
-        self.update()
 
+        tk.Label(self, text="● DAVID'S MONITOR", bg=BG, fg=GREEN, font=FONT_BOLD).pack(anchor="w", padx=8, pady=(8, 4))
 
-    def _build_ui(self):
-        pad = dict(padx=8, pady=2)
-
-   
-        tk.Label(self.root, text="● DAVID'S MONITOR",
-                 bg=BG, fg=GREEN, font=FONT_BOLD).pack(anchor="w", padx=8, pady=(8, 4))
-
-        # CPU / RAM / Disk bars
-        self.rows = {}
+     
+        self.bars = {}
         for key, label in [("cpu", "CPU"), ("ram", "RAM"), ("disk", "Disk")]:
-            row = tk.Frame(self.root, bg=BG)
-            row.pack(fill="x", **pad)
-            tk.Label(row, text=f"{label:<5}", bg=BG, fg=FG, font=FONT, width=5).pack(side="left")
-            cv = tk.Canvas(row, width=self.BAR_W, height=self.BAR_H,
-                           bg=BG, highlightthickness=0)
-            cv.pack(side="left", padx=(4, 6))
-            pct = tk.Label(row, text="  0.0%", bg=BG, fg=FG, font=FONT, width=6)
-            pct.pack(side="left")
-            self.rows[key] = (cv, pct)
+            row = BarRow(self, label)
+            row.pack(fill="x", padx=8, pady=2)
+            self.bars[key] = row
 
-       
-        tk.Label(self.root, text="─" * 28, bg=BG, fg=DIM, font=FONT).pack(anchor="w", padx=8)
+        tk.Label(self, text="─"*28, bg=BG, fg=DIM, font=FONT).pack(anchor="w", padx=8)
 
-        self.gpu_frame = tk.Frame(self.root, bg=BG)
+        self.gpu_frame = tk.Frame(self, bg=BG)
         self.gpu_frame.pack(fill="x", padx=8, pady=(0, 4))
-
-        
         self.gpu_rows = []
         for _ in range(4):
-            row = tk.Frame(self.gpu_frame, bg=BG)
-            lbl = tk.Label(row, text="", bg=BG, fg=FG, font=FONT)
-            lbl.pack(anchor="w")
-            self.gpu_rows.append((row, lbl))
+            row = tk.Label(self.gpu_frame, text="", bg=BG, fg=FG, font=FONT)
+            row.pack(anchor="w")
+            self.gpu_rows.append(row)
+        self.no_gpu_label = tk.Label(self.gpu_frame, text="No GPU", bg=BG, fg=DIM, font=FONT)
 
-        self.no_gpu_label = tk.Label(self.gpu_frame, text="No GPU",
-                                     bg=BG, fg=DIM, font=FONT)
+        tk.Label(self, text="─"*28, bg=BG, fg=DIM, font=FONT).pack(anchor="w", padx=8)
 
-        
-        tk.Label(self.root, text="─" * 28, bg=BG, fg=DIM, font=FONT).pack(anchor="w", padx=8)
-
-        proc_frame = tk.Frame(self.root, bg=BG)
-        proc_frame.pack(fill="x", padx=8, pady=(0, 8))
-
-        tk.Label(proc_frame, text="● TOP PROCESSES",
-                 bg=BG, fg=GREEN, font=FONT_BOLD).pack(anchor="w", pady=(2, 4))
-
-        self.proc_labels = {}
+       
+        tk.Label(self, text="● TOP PROCESSES", bg=BG, fg=GREEN, font=FONT_BOLD).pack(anchor="w", padx=8, pady=(2, 4))
+        self.top_procs = {}
         for key, label in [("cpu", "CPU"), ("ram", "RAM"), ("gpu", "GPU")]:
-            row = tk.Frame(proc_frame, bg=BG)
-            row.pack(fill="x")
-            tk.Label(row, text=f"{label:<4}", bg=BG, fg=DIM, font=FONT).pack(side="left")
-            lbl = tk.Label(row, text="—", bg=BG, fg=FG, font=FONT)
-            lbl.pack(side="left", padx=(4, 0))
-            self.proc_labels[key] = lbl
+            row = TopProcessRow(self, label)
+            row.pack(fill="x", padx=8)
+            self.top_procs[key] = row
 
-   
-    def _draw_bar(self, canvas, percent):
-        canvas.delete("all")
-        filled = int(self.BAR_W * percent / 100)
-        canvas.create_rectangle(0, 0, self.BAR_W, self.BAR_H, fill=DIM, outline="")
-        if filled > 0:
-            canvas.create_rectangle(0, 0, filled, self.BAR_H,
-                                     fill=bar_color(percent), outline="")
+        self.update_stats()
 
-    
-    def update(self):
-        stats = get_system_stats()
-        procs = get_top_processes()
+    def update_stats(self):
+        stats = SystemStats.get()
+        procs = SystemStats.top_processes()
 
-        # CPU / RAM / Disk bars
         for key in ("cpu", "ram", "disk"):
-            pct = stats[key]
-            cv, lbl = self.rows[key]
-            self._draw_bar(cv, pct)
-            lbl.config(text=f"{pct:5.1f}%", fg=bar_color(pct))
+            self.bars[key].update(stats[key])
 
-        # GPU rows
-        gpus = stats["gpus"]
-        if gpus:
+       
+        if stats["gpus"]:
             self.no_gpu_label.pack_forget()
-            for i, (row, lbl) in enumerate(self.gpu_rows):
-                if i < len(gpus):
-                    gpu = gpus[i]
-                    lbl.config(
-                        text=f"GPU{gpu['index']}  {gpu['usage']:5.1f}%   {gpu['temp']}°C",
-                        fg=bar_color(gpu['usage'])
-                    )
-                    row.pack(fill="x")
+            for i, row in enumerate(self.gpu_rows):
+                if i < len(stats["gpus"]):
+                    gpu = stats["gpus"][i]
+                    row.config(text=f"GPU{gpu['index']}  {gpu['usage']:5.1f}%   {gpu['temp']}°C", fg=bar_color(gpu['usage']))
+                    row.pack(anchor="w")
                 else:
                     row.pack_forget()
         else:
-            for row, _ in self.gpu_rows:
-                row.pack_forget()
+            for row in self.gpu_rows: row.pack_forget()
             self.no_gpu_label.pack(anchor="w")
 
-        # Top processes
         if procs["cpu"]:
             p = procs["cpu"]
-            self.proc_labels["cpu"].config(
-                text=f"{p['name'][:18]:<18}  {p['cpu_percent']:5.1f}%",
-                fg=bar_color(p['cpu_percent'])
-            )
-
+            self.top_procs["cpu"].update(f"{p['name'][:18]:<18}  {p['cpu_percent']:5.1f}%", p['cpu_percent'])
         if procs["ram"]:
             p = procs["ram"]
-            self.proc_labels["ram"].config(
-                text=f"{p['name'][:18]:<18}  {p['memory_percent']:5.1f}%",
-                fg=bar_color(p['memory_percent'])
-            )
+            self.top_procs["ram"].update(f"{p['name'][:18]:<18}  {p['memory_percent']:5.1f}%", p['memory_percent'])
+        self.top_procs["gpu"].update("N/A")
 
-       
-        self.proc_labels["gpu"].config(text="N/A", fg=DIM)
+        self.after(REFRESH_MS, self.update_stats)
 
-        self.root.after(REFRESH_MS, self.update)
-
-   
     def _make_draggable(self):
-        self.root.bind("<ButtonPress-1>",  self._drag_start)
-        self.root.bind("<B1-Motion>",      self._drag_move)
-
-    def _drag_start(self, e):
-        self._dx = e.x
-        self._dy = e.y
+        self.bind("<ButtonPress-1>", lambda e: setattr(self, "_drag_offset", (e.x, e.y)))
+        self.bind("<B1-Motion>", self._drag_move)
 
     def _drag_move(self, e):
-        x = self.root.winfo_x() + e.x - self._dx
-        y = self.root.winfo_y() + e.y - self._dy
-        self.root.geometry(f"+{x}+{y}")
+        dx, dy = self._drag_offset
+        self.geometry(f"+{self.winfo_x() + e.x - dx}+{self.winfo_y() + e.y - dy}")
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    SystemOverlay(root)
-    root.mainloop()
+    app = SystemOverlay()
+    app.mainloop()
