@@ -7,6 +7,12 @@ Starting from v2.0, it runs as a sleek always-on-top desktop overlay instead of 
 
 ## Versions
 
+### v2.0.1 — Desktop Overlay *(current)*
+Added top process tracking — shows the highest CPU and RAM consuming process in real-time. Still as lightweight as before.
+GPU top process tracking is not yet supported and will be added in v2.1.
+
+<img width="343" height="330" alt="Screenshot 2026-03-23 195002" src="https://github.com/user-attachments/assets/e9dbbeb9-1040-47f4-9012-4922340b2a9e" />
+
 ### v2.0 — Desktop Overlay *(current)*
 A frameless, transparent overlay that sits in the corner of your screen and stays on top of all windows. Draggable and color-coded.
 
@@ -24,17 +30,22 @@ The original console-based version with color-coded ASCII bars. Still useful for
 ## Features
 
 - Real-time monitoring of CPU, RAM, and Disk usage
-- Optional GPU monitoring (usage + temperature)
-- Color-coded bars:
-  - 🟢 Green → Normal (0–50%)
-  - 🟡 Yellow → Moderate (51–80%)
-  - 🔴 Red → High (81–100%)
-- Always-on-top frameless window
-- Draggable — place it anywhere on screen
-- 85% transparency so it doesn't block your work
-- Press `Escape` to close
-- Cross-platform: Windows & Linux
-- Works without a GPU
+- Top process tracking — highest CPU and RAM consuming process
+-Optional GPU monitoring (usage + temperature)
+-GPU top process tracking not yet supported — coming in v2.1
+-Color-coded bars:
+
+-🟢 Green → Normal (0–50%)
+-🟡 Yellow → Moderate (51–80%)
+-🔴 Red → High (81–100%)
+
+
+-Always-on-top frameless window
+-Draggable — place it anywhere on screen
+-85% transparency so it doesn't block your work
+-Press Escape to close
+-Cross-platform: Windows & Linux
+-Works without a GPU
 
 ---
 
@@ -66,7 +77,7 @@ sudo pacman -S tk
 
 ## Usage
 
-### v2.0 — Desktop Overlay
+### v2.0.1 — Desktop Overlay
 ```
 python monitor_gui.py
 ```
@@ -86,7 +97,6 @@ Press `Ctrl + C` to stop.
 - [ ] Per-core CPU usage
 - [ ] Network usage (upload/download speed)
 - [ ] Log system data to a file
-- [ ] Top resource-consuming processes
 
 ---
 
