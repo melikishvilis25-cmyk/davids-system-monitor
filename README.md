@@ -12,15 +12,18 @@ Fixed CPU usage showing incorrect high values by normalizing per core count. Fix
 ### v2.0.1 - Desktop Overlay
 Added top process tracking - shows the highest CPU and RAM consuming process in real-time. Still as lightweight as before.
 GPU top process tracking is not yet supported and will be added in v2.1.
+
 <img width="343" height="330" alt="Screenshot 2026-03-23 195002" src="https://github.com/user-attachments/assets/e9dbbeb9-1040-47f4-9012-4922340b2a9e" />
 
 ### v2.0 - Desktop Overlay
 A frameless, transparent overlay that sits in the corner of your screen and stays on top of all windows. Draggable and color-coded.
+
 <img width="385" height="221" alt="image" src="https://github.com/user-attachments/assets/776330fa-8b3b-4f84-8c11-8355c6019c05" />
 
 ### v1.0 - Terminal Monitor *(legacy)*
 The original console-based version with color-coded ASCII bars. Still useful for **headless servers or SSH sessions** where a display isn't available.  
 Available under [Releases](https://github.com/melikishvilis25-cmyk/davids-system-monitor/releases/tag/Update)
+
 <img width="823" height="288" alt="preview" src="https://github.com/user-attachments/assets/794291ea-15e7-4ede-9eb8-7858b10b62be" />
 
 ---
